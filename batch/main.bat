@@ -12,37 +12,47 @@ if not exist "%directory%" (
 
 cd %directory%
 
-rem Initialize arrays to store file names and file paths
-set "fileNames="
-set "filePaths="
+rem Initialize collection to store file names and file paths
+set "counter=0"
 
 rem Loop through all files in the directory and its subdirectories with the specified extension
 for /r %%a in (*.%extension%) do (
-    rem Extract file name from the full path using %%~nxa modifier
+    rem Extract file name and full path
     set "fileName=%%~nxa"
+    set "filePath=%%~fa"
     
-    rem Append file name and full path to the respective arrays
-    set "fileNames=!fileNames!,!fileName!"
-    set "filePaths=!filePaths!,%%~fa"
+    rem Increment the counter for each file
+    set /a counter+=1
+
+    rem Assign file name and path to variables with unique names
+    set "fileName!counter!=!fileName!"
+    set "filePath!counter!=!filePath!"
 )
-
-rem Remove leading comma from arrays
-set "fileNames=!fileNames:~1!"
-set "filePaths=!filePaths:~1!"
-
-rem Print the arrays
-echo File Names: !fileNames!
-echo File Paths: !filePaths!
 
 rem Get current date and time
 set "currentDateTime=%DATE% %TIME%"
 
-rem Output arrays to a log file
+rem Output arrays and current date and time to a log file
 (
-    echo !currentDateTime!
+    echo Current Date and Time: %currentDateTime%
     echo.
-    echo File Names: !fileNames!
-    echo File Paths: !filePaths!
-) > "%directory%\summary.log"
+    rem Loop through the files using the counter to access each variable
+    for /l %%i in (1, 1, %counter%) do (
+        rem Print the filename and corresponding file path
+        echo !fileName%%i!   !filePath%%i!
+    )
+) > "%directory%\output.log"
+
+rem Open the log file
+start "" "%directory%\output.log"
+
+rem Pause the script until the user presses Enter
+pause
+
+rem Close the log file by terminating the associated program
+taskkill /f /im notepad.exe
+
+rem Delete the log file
+del "%directory%\output.log"
 
 exit /b
