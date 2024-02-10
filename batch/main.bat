@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set /p extension=Enter the file extension (e.g., txt, docx): 
-set /p directory=Enter absolute directory path (e.g., C:\Install\PoshGit): 
+set /p "extension=Enter the file extension (default: bat): " || set "extension=bat"
+set /p "directory=Enter absolute directory path (default: C:\Users\%USERNAME%): " || set "directory=C:\Users\%USERNAME%"
 
 rem Check if the directory exists
 if not exist "%directory%" (
@@ -29,17 +29,17 @@ for /r %%a in (*.%extension%) do (
     set "filePath!counter!=!filePath!"
 )
 
-rem Get current date and time
-set "currentDateTime=%DATE% %TIME%"
-
 rem Output arrays and current date and time to a log file
 (
-    echo Current Date and Time: %currentDateTime%
+    echo Date: %DATE%
+    echo Time: %TIME%
     echo.
     rem Loop through the files using the counter to access each variable
     for /l %%i in (1, 1, %counter%) do (
         rem Print the filename and corresponding file path
-        echo !fileName%%i!   !filePath%%i!
+        echo !fileName%%i!
+        echo !filePath%%i!\
+        echo.
     )
 ) > "%directory%\output.log"
 
