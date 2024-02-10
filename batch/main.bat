@@ -10,23 +10,17 @@ if not exist "%directory%" (
     exit /b
 )
 
+rem If directory exists cd into it
 cd %directory%
 
-rem Initialize collection to store file names and file paths
-set "counter=0"
+set "index=0"
 
 rem Loop through all files in the directory and its subdirectories with the specified extension
-for /r %%a in (*.%extension%) do (
-    rem Extract file name and full path
-    set "fileName=%%~nxa"
-    set "filePath=%%~fa"
-    
-    rem Increment the counter for each file
-    set /a counter+=1
-
-    rem Assign file name and path to variables with unique names
-    set "fileName!counter!=!fileName!"
-    set "filePath!counter!=!filePath!"
+for /r %%A in (*.%extension%) do (
+    rem Append file path to the array
+    set /a index+=1
+    set "file[!index!]=%%~nxA"
+    set "filePath[!index!]=%%~fA"
 )
 
 rem Output arrays and current date and time to a log file
@@ -35,11 +29,10 @@ rem Output arrays and current date and time to a log file
     echo Time: %TIME%
     echo.
     rem Loop through the files using the counter to access each variable
-    for /l %%i in (1, 1, %counter%) do (
-        rem Print the filename and corresponding file path
-        echo !fileName%%i!
-        echo !filePath%%i!\
-        echo.
+    for /l %%i in (1, 1, %index%) do (
+    echo !file[%%i]!
+    echo !filePath[%%i]!
+    echo.
     )
 ) > "%directory%\output.log"
 
