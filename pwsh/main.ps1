@@ -1,11 +1,11 @@
+# Get list of system users
 $systemUsers = Get-WmiObject Win32_UserAccount | Select-Object -ExpandProperty Name
 
-# # Prompt user to enter username
+# Prompt user to enter username
 do {
     $enteredUsername = Read-Host -Prompt "Enter your username"
     
     if ([string]::IsNullOrWhiteSpace($enteredUsername)) {
-        Write-Host "All users execute"
         $processes = Get-Process -IncludeUserName
         break
     }
@@ -26,18 +26,35 @@ $time = Get-Date -Format "HHmmss"
 foreach ($process in $processes) {
     # Get process username
     $username = $process.UserName
+
     # Extract the portion after the backslash ("\")
     $splitUsername = $username -split '\\'
     $user = $splitUsername[-1]
+
+    # Write process info into according files based on username
     if ($systemUsers -contains $user) {
         $logFileName = "$user-process-log-$date-$time.txt"
         $logFilePath = "C:\$logFileName"
-        "Process ID: $($process.Id), Process Name: $($process.Name)" | Out-File -FilePath $logFilePath -Append
+        "Process ID: $($process.Id)`nProcess Name: $($process.Name)`nCPU(s): $($process.CPU)`nPath: $($process.Path)`n`n" | Out-File -FilePath $logFilePath -Append
     }
     else {
         $logFileName = "no-user-process-log-$date-$time.txt"
         $logFilePath = "C:\$logFileName"
-        "Process ID: $($process.Id), Process Name: $($process.Name)" | Out-File -FilePath $logFilePath -Append
+        "Process ID: $($process.Id)`nProcess Name: $($process.Name)`nCPU(s): $($process.CPU)`nPath: $($process.Path)`n`n" | Out-File -FilePath $logFilePath -Append
     }
 }
+
+# Open all the log files created by the script with Notepad
+$logFiles = Get-ChildItem -Path "C:\" -Filter "*process-log-$date-$time.txt"
+foreach ($logFile in $logFiles) {
+    Start-Process -FilePath "notepad.exe" -ArgumentList $logFile.FullName
+}
+
+# Pause the script execution
+Write-Host "Press Enter to continue..."
+Read-Host
+
+# Close notepad
+Get-Process -Name "notepad" | Stop-Process -Force
+
 
