@@ -1,21 +1,43 @@
-$users = Get-WmiObject Win32_UserAccount | Select-Object -ExpandProperty Name
+$systemUsers = Get-WmiObject Win32_UserAccount | Select-Object -ExpandProperty Name
 
-# Prompt user to enter username
+# # Prompt user to enter username
 do {
-    $username = Read-Host -Prompt "Enter your username"
+    $enteredUsername = Read-Host -Prompt "Enter your username"
     
-    if ([string]::IsNullOrWhiteSpace($username)) {
+    if ([string]::IsNullOrWhiteSpace($enteredUsername)) {
         Write-Host "All users execute"
+        $processes = Get-Process -IncludeUserName
         break
     }
-    elseif (!($users -contains $username)) {
-        Write-Host "User '$username' not found."
+    elseif (!($systemUsers -contains $enteredUsername)) {
+        Write-Host "User '$enteredUsername' not found."
         return
     }
     else {
+        $processes = Get-Process -IncludeUserName | Where UserName -match $enteredUsername
         break 
     }
 } while ($true)
 
+# Format the current date and time
+$date = Get-Date -Format "yyyyMMdd"
+$time = Get-Date -Format "HHmmss"
 
-Write-Host "Bye $username"
+foreach ($process in $processes) {
+    # Get process username
+    $username = $process.UserName
+    # Extract the portion after the backslash ("\")
+    $splitUsername = $username -split '\\'
+    $user = $splitUsername[-1]
+    if ($systemUsers -contains $user) {
+        $logFileName = "$user-process-log-$date-$time.txt"
+        $logFilePath = "C:\$logFileName"
+        "Process ID: $($process.Id), Process Name: $($process.Name)" | Out-File -FilePath $logFilePath -Append
+    }
+    else {
+        $logFileName = "no-user-process-log-$date-$time.txt"
+        $logFilePath = "C:\$logFileName"
+        "Process ID: $($process.Id), Process Name: $($process.Name)" | Out-File -FilePath $logFilePath -Append
+    }
+}
+
