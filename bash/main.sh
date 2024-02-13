@@ -1,7 +1,9 @@
 #!/bin/bash
+
 systemUsers=()
 DIRECTORY_NAME="processLogs"
 
+# Collect all system users
 while IFS=: read -r username _ _ _ _ _ _
 do
     # Append the username to the array
@@ -10,6 +12,7 @@ done < /etc/passwd
 
 read -p "Enter your username: " enteredUsername
 
+# Collect running processes info based on enteredUsername value
 if [ -z "$enteredUsername" ]; then
     mapfile -t userProcesses < <(ps aux)
 elif [[ ! " ${systemUsers[@]} " =~ " $enteredUsername " ]]; then
@@ -19,6 +22,7 @@ else
     mapfile -t userProcesses < <(ps aux | grep "${enteredUsername}")
 fi
 
+# Define formatted date and time
 DATE=$(date +"%Y%m%d")
 TIME=$(date +"%H%M%S")
 
@@ -58,6 +62,7 @@ outputFileInfo() {
     local dirName="$1"
     local totalLines=0
 
+    # for each file in a directory, output it's line count and add up total lines
     for file in "$dirName"/*; do
         fileLineCount=$(wc -l < "$file")
         echo "File: $file"
@@ -65,7 +70,7 @@ outputFileInfo() {
         echo ""
         totalLines=$((totalLines + fileLineCount))
     done
-    
+
     echo ""
     echo "Total line count: $totalLines"
 }
@@ -77,6 +82,7 @@ outputFileContents() {
 
 mkdir -p "$DIRECTORY_NAME"
 
+# create log files just for the user or for all system users based on username input
 if [ -n "$enteredUsername" ]; then
     create_logs "$enteredUsername"
 else
@@ -87,6 +93,7 @@ fi
 
 outputFileInfo "$DIRECTORY_NAME"
 
+# Print file contents if username was provided
 if [ -n "$enteredUsername" ]; then
     echo ""
     echo "START OF THE FILE"
