@@ -1,14 +1,12 @@
 #!/bin/bash
 systemUsers=()
-directoryName="processLogs"
+DIRECTORY_NAME="processLogs"
 
 while IFS=: read -r username _ _ _ _ _ _
 do
     # Append the username to the array
     systemUsers+=("$username")
 done < /etc/passwd
-
-printf '%s\n' "${systemUsers[@]}"
 
 read -p "Enter your username: " enteredUsername
 
@@ -21,14 +19,14 @@ else
     mapfile -t userProcesses < <(ps aux | grep "${enteredUsername}")
 fi
 
-_date=$(date +"%Y%m%d")
-_time=$(date +"%H%M%S")
+DATE=$(date +"%Y%m%d")
+TIME=$(date +"%H%M%S")
 
 create_logs() {
     local username="$1"
-    local logFilename="${directoryName}/$username-process-log-$_date-$_time.log"
-    echo "$_date" >> "$logFilename"
-    echo "$_time" >> "$logFilename"
+    local logFilename="${DIRECTORY_NAME}/$username-process-log-$DATE-$TIME.log"
+    echo "$DATE" >> "$logFilename"
+    echo "$TIME" >> "$logFilename"
     echo "" >> "$logFilename"
 
     # Write processes to the log file
@@ -72,21 +70,33 @@ outputFileInfo() {
     echo "Total line count: $totalLines"
 }
 
+outputFileContents() {
+    local username="$1"
+    cat "$DIRECTORY_NAME/$username-process-log-$DATE-$TIME.log"
+}
 
-# echo "\n"
-# printf '%s\n' "${processes[@]}"
-
-mkdir -p "$directoryName"
+mkdir -p "$DIRECTORY_NAME"
 
 if [ -n "$enteredUsername" ]; then
     create_logs "$enteredUsername"
 else
-     echo "Creating logs for all system users:"
     for user in "${systemUsers[@]}"; do
         create_logs "$user"
     done
 fi
 
-outputFileInfo "$directoryName"
+outputFileInfo "$DIRECTORY_NAME"
 
+if [ -n "$enteredUsername" ]; then
+    echo ""
+    echo "START OF THE FILE"
+    echo "-------------------------------------------------------------------"
+    outputFileContents "$enteredUsername"
+    echo "-------------------------------------------------------------------"
+    echo "END OF THE FILE"
+fi
 
+read -p "Press enter to continue ..."
+
+# Delete all files and directory
+rm -rf "$DIRECTORY_NAME"
