@@ -1,6 +1,7 @@
 #!/bin/bash
 systemUsers=()
 DIRECTORY_NAME="processLogs"
+DIRECTORY_NAME="processLogs"
 
 while IFS=: read -r username _ _ _ _ _ _
 do
@@ -21,9 +22,14 @@ fi
 
 DATE=$(date +"%Y%m%d")
 TIME=$(date +"%H%M%S")
+DATE=$(date +"%Y%m%d")
+TIME=$(date +"%H%M%S")
 
 create_logs() {
     local username="$1"
+    local logFilename="${DIRECTORY_NAME}/$username-process-log-$DATE-$TIME.log"
+    echo "$DATE" >> "$logFilename"
+    echo "$TIME" >> "$logFilename"
     local logFilename="${DIRECTORY_NAME}/$username-process-log-$DATE-$TIME.log"
     echo "$DATE" >> "$logFilename"
     echo "$TIME" >> "$logFilename"
@@ -74,7 +80,12 @@ outputFileContents() {
     local username="$1"
     cat "$DIRECTORY_NAME/$username-process-log-$DATE-$TIME.log"
 }
+outputFileContents() {
+    local username="$1"
+    cat "$DIRECTORY_NAME/$username-process-log-$DATE-$TIME.log"
+}
 
+mkdir -p "$DIRECTORY_NAME"
 mkdir -p "$DIRECTORY_NAME"
 
 if [ -n "$enteredUsername" ]; then
