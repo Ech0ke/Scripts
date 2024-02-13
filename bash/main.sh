@@ -33,27 +33,43 @@ create_logs() {
 
     # Write processes to the log file
     for process in "${userProcesses[@]}"; do
-    # Extract the username of the process owner from the process line
-    processUsername=$(echo "$process" | awk '{print $1}')
-    
-    # Check if the username of the process owner matches the specified username
-    if [ "$processUsername" == "$username" ]; then
+        # Extract the username of the process owner from the process line
+        processUsername=$(echo "$process" | awk '{print $1}')
 
-        # get desired properties prom process details
-        pid=$(echo "$process" | awk '{print $2}')
-        name=$(echo "$process" | awk '{n=split($11,a,"/"); print a[n]}') 
-        startTime=$(echo "$process" | awk '{print $9}')
+        # Check if the username of the process owner matches the specified username
+        if [ "$processUsername" == "$username" ]; then
 
-        # format and write properties to a file 
-        echo "ID: $pid" >> "$logFilename"
-        echo "Name: $name" >> "$logFilename"
-        echo "Owner: $processUsername" >> "$logFilename"
-        echo "Start time: $startTime" >> "$logFilename"
-        echo "" >> "$logFilename"
-    fi
-done
+            # get desired properties prom process details
+            pid=$(echo "$process" | awk '{print $2}')
+            name=$(echo "$process" | awk '{n=split($11,a,"/"); print a[n]}') 
+            startTime=$(echo "$process" | awk '{print $9}')
+
+            # format and write properties to a file 
+            echo "ID: $pid" >> "$logFilename"
+            echo "Name: $name" >> "$logFilename"
+            echo "Owner: $processUsername" >> "$logFilename"
+            echo "Start time: $startTime" >> "$logFilename"
+            echo "" >> "$logFilename"
+        fi
+    done
     
     echo "Log file created for user $username: $logFilename"
+}
+
+outputFileInfo() {
+    local dirName="$1"
+    local totalLines=0
+
+    for file in "$dirName"/*; do
+
+        fileLineCount=$(wc -l < "$file")
+            echo "File: $file"
+            echo "Line count: $fileLineCount"
+            echo ""
+            totalLines=$((totalLines + fileLineCount))
+    done
+    echo ""
+    echo "Total line count: $totalLines"
 }
 
 
@@ -70,5 +86,7 @@ else
         create_logs "$user"
     done
 fi
+
+outputFileInfo "$directoryName"
 
 
