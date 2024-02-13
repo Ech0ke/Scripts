@@ -14,13 +14,11 @@ read -p "Enter your username: " enteredUsername
 
 if [ -z "$enteredUsername" ]; then
     mapfile -t userProcesses < <(ps aux)
-    break
 elif [[ ! " ${systemUsers[@]} " =~ " $enteredUsername " ]]; then
     echo "User ${enteredUsername} not found."
     exit 1
 else
     mapfile -t userProcesses < <(ps aux | grep "${enteredUsername}")
-    break
 fi
 
 _date=$(date +"%Y%m%d")
@@ -43,7 +41,7 @@ create_logs() {
 
         # get desired properties prom process details
         pid=$(echo "$process" | awk '{print $2}')
-        name=$(echo "$process" | awk '{print $11}')
+        name=$(echo "$process" | awk '{n=split($11,a,"/"); print a[n]}') 
         startTime=$(echo "$process" | awk '{print $9}')
 
         # format and write properties to a file 
