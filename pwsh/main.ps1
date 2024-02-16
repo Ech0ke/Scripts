@@ -1,23 +1,21 @@
+# Get username from script parameters
+param(
+    [string]$enteredUsername
+)
+
 # Get list of system users
 $systemUsers = Get-WmiObject Win32_UserAccount | Select-Object -ExpandProperty Name
-
-# Prompt user to enter username
-do {
-    $enteredUsername = Read-Host -Prompt "Enter your username"
     
-    if ([string]::IsNullOrWhiteSpace($enteredUsername)) {
-        $processes = Get-Process -IncludeUserName
-        break
-    }
-    elseif (!($systemUsers -contains $enteredUsername)) {
-        Write-Host "User '$enteredUsername' not found."
-        return
-    }
-    else {
-        $processes = Get-Process -IncludeUserName | Where UserName -match $enteredUsername
-        break 
-    }
-} while ($true)
+if ([string]::IsNullOrWhiteSpace($enteredUsername)) {
+    $processes = Get-Process -IncludeUserName
+}
+elseif (!($systemUsers -contains $enteredUsername)) {
+    Write-Host "User '$enteredUsername' not found."
+    return
+}
+else {
+    $processes = Get-Process -IncludeUserName | Where UserName -match $enteredUsername
+}
 
 # Format the current date and time
 $date = Get-Date -Format "yyyyMMdd"
