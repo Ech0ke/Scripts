@@ -1,10 +1,16 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set /p "extension=Enter the file extension (default: bat): " || set "extension=bat"
-set /p "directory=Enter absolute directory path (default: C:\Users\%USERNAME%): " || set "directory=C:\Users\%USERNAME%"
+set "extension=bat"
+set "directory=C:\Users\%USERNAME%"
 
-rem Check if the directory exists
+REM Check if directory argument is provided
+if not "%~1"=="" set "directory=%~1"
+
+REM Check if extension argument is provided
+if not "%~2"=="" set "extension=%~2"
+
+rem Check if directory exists
 if not exist "%directory%" (
     echo Error: Directory not found.
     exit /b
