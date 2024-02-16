@@ -10,7 +10,7 @@ do
     systemUsers+=("$username")
 done < /etc/passwd
 
-read -p "Enter your username: " enteredUsername
+enteredUsername="$1"
 
 # Collect running processes info based on enteredUsername value
 if [ -z "$enteredUsername" ]; then
