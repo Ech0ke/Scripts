@@ -1,8 +1,8 @@
 <?php
-$fileFormats = array("txt", "html", "csv");
-$fileFormat;
+define("FILE_FORMATS", array("txt", "html", "csv"));
+define("LOG_FILE_NAME", "process-log");
 
-function formatHtmlCell($data, $startIdx, $len = null) {
+function extractProcessValue($data, $startIdx, $len = null) {
     $cellInfo = trim(substr($data, $startIdx, $len));
     return preg_replace('/\s+/', '', $cellInfo);
 }
@@ -25,15 +25,15 @@ function writeLog($processes, $format = 'txt') {
             $log = "<table border='1' style='border-collapse: collapse;'><tr><th>Image Name</th><th>PID</th><th>Session Name</th><th>Session#</th><th>Mem Usage</th><th>Status</th><th>User Name</th><th>CPU Time</th><th>Window Title</th></tr>";
             for ($i = 3; $i < count($processes); $i++) {
                 $properties = array(
-                    'ImageName' => formatHtmlCell($processes[$i], 0, 26),
-                    'PID' => formatHtmlCell($processes[$i], 26, 9),
-                    'SessionName' => formatHtmlCell($processes[$i], 35, 17),
-                    'SessionNumber' => formatHtmlCell($processes[$i], 52, 12),
-                    'MemUsage' => formatHtmlCell($processes[$i], 64, 13),
-                    'Status' => formatHtmlCell($processes[$i], 77, 16),
-                    'UserName' => formatHtmlCell($processes[$i], 93, 51),
-                    'CPUTime' => formatHtmlCell($processes[$i], 144, 13),
-                    'WindowTitle' => formatHtmlCell($processes[$i], 157)
+                    'ImageName' => extractProcessValue($processes[$i], 0, 26),
+                    'PID' => extractProcessValue($processes[$i], 26, 9),
+                    'SessionName' => extractProcessValue($processes[$i], 35, 17),
+                    'SessionNumber' => extractProcessValue($processes[$i], 52, 12),
+                    'MemUsage' => extractProcessValue($processes[$i], 64, 13),
+                    'Status' => extractProcessValue($processes[$i], 77, 16),
+                    'UserName' => extractProcessValue($processes[$i], 93, 51),
+                    'CPUTime' => extractProcessValue($processes[$i], 144, 13),
+                    'WindowTitle' => extractProcessValue($processes[$i], 157)
                 );
                 $log .= "<tr>";
                 foreach ($properties as $property) {
@@ -43,26 +43,39 @@ function writeLog($processes, $format = 'txt') {
             }
             $log .= "</table>";
             break;
-        // case 'csv':
-        //     $log = "Image Name,PID,Session Name,Session#,Mem Usage\n";
-        //     foreach ($processes as $process) {
-        //         $info = preg_split('/\s+/', $process);
-        //         $log .= implode(",", $info) . "\n";
-        //     }
-        //     break;
+        case 'csv':
+            $log = "Image Name,PID,Session Name,Session#,Mem Usage,Status,User Name,CPU Time,Window Title\n";
+            
+            for ($i = 3; $i < count($processes); $i++) {
+                $properties = array(
+                    'ImageName' => extractProcessValue($processes[$i], 0, 26),
+                    'PID' => extractProcessValue($processes[$i], 26, 9),
+                    'SessionName' => extractProcessValue($processes[$i], 35, 17),
+                    'SessionNumber' => extractProcessValue($processes[$i], 52, 12),
+                    'MemUsage' => extractProcessValue($processes[$i], 64, 13),
+                    'Status' => extractProcessValue($processes[$i], 77, 16),
+                    'UserName' => extractProcessValue($processes[$i], 93, 51),
+                    'CPUTime' => extractProcessValue($processes[$i], 144, 13),
+                    'WindowTitle' => extractProcessValue($processes[$i], 157)
+                );
+                $log .= implode(',', $properties) . "\n";
+            }
+            break;
     }
-    file_put_contents("processes-log.$format", $log);
+    file_put_contents(LOG_FILE_NAME . ".$format", $log);
 }
 
 if (isset($argv[1])) {
-    if (in_array($argv[1], $fileFormats)) {
+    if (in_array($argv[1], FILE_FORMATS)) {
         $fileFormat = $argv[1];
-    } elseif ($argv[1]==="") {
-        $fileFormat = $fileFormats[0];
+    } elseif (empty($argv[1])) {
+        $fileFormat = FILE_FORMATS[0];
     } else {
         echo "Provided file format not supported. Supported types: txt, html, csv";
         exit(1);
     }
+} else {
+    $fileFormat = FILE_FORMATS[0];
 }
 
 $username = isset($argv[2]) ? $argv[2] : null;
@@ -75,5 +88,5 @@ writeLog($processes, $fileFormat);
 echo "Press Enter to continue...";
 system("pause >nul");
 
-unlink("processes-log.$fileFormat");
+unlink(LOG_FILE_NAME . ".$fileFormat");
 ?>
