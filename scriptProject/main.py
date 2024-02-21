@@ -1,6 +1,7 @@
-import os
 import subprocess
 import platform
+import sys
+import re
 
 
 def get_cpu_info():
@@ -65,17 +66,21 @@ def get_os_info():
 def get_display_info():
     display_info = []
     try:
+        # Run PowerShell command directly, without using Select-Object
         output = subprocess.check_output(
-            ['wmic', 'desktopmonitor', 'get', 'screenheight,screenwidth'])
-        resolutions = output.decode('utf-8').strip().split('\n')[1:]
-        for resolution in resolutions:
-            parts = resolution.strip().split()
-            if len(parts) >= 2:
-                width, height = parts
-                display_info.append({'Resolution': f"{width}x{height}"})
-            else:
-                display_info.append({'Resolution': 'N/A'})
-    except subprocess.CalledProcessError:
+            ['powershell',
+                'Get-CimInstance -ClassName Win32_VideoController | ForEach-Object { $_.VideoModeDescription }'],
+            shell=True,
+            universal_newlines=True
+        )
+        # Split the output into lines
+        lines = output.strip().split('\n')
+
+        for line in lines:
+            # Strip any leading or trailing spaces
+            line = line.strip()
+            display_info.append({'Resolution': line})
+    except subprocess.CalledProcessError as e:
         display_info.append({'Resolution': 'N/A'})
     return display_info
 
@@ -85,7 +90,6 @@ def get_motherboard_info():
     try:
         output = subprocess.check_output(
             ['wmic', 'baseboard', 'get', 'product,manufacturer,serialnumber,version'])
-        print(output)
         lines = output.decode('utf-8').strip().split('\n')[1:]
         if lines:
             info = lines[0].strip().split(None, 3)
@@ -100,6 +104,41 @@ def get_motherboard_info():
     except subprocess.CalledProcessError:
         pass  # Handle the error gracefully
     return motherboard_info
+
+
+def get_network_card_info():
+    network_cards = []
+    try:
+        output = subprocess.check_output(
+            ['ipconfig', '/all'], universal_newlines=True)
+        # Split the output into sections for each network adapter
+        sections = re.split(r'\r?\n\r?\n', output.strip())
+        for section in sections:
+            adapter_info = {}
+            lines = section.strip().split('\n')
+            for line in lines:
+                if line.strip().startswith('Ethernet adapter') or line.strip().startswith('Wireless LAN adapter'):
+                    adapter_info['Name'] = line.strip().split(':')[1].strip()
+                elif 'Physical Address' in line:
+                    adapter_info['MAC Address'] = line.split(':')[1].strip()
+                elif 'Description' in line:
+                    adapter_info['Description'] = line.split(':')[1].strip()
+                elif 'IPv4 Address' in line:
+                    ipv4_address = line.split(':')[1].strip()
+                    if ipv4_address != '':
+                        adapter_info['IPv4 Address'] = ipv4_address
+                    else:
+                        break
+                elif 'Subnet Mask' in line:
+                    adapter_info['Subnet Mask'] = line.split(':')[1].strip()
+                elif 'Default Gateway' in line:
+                    adapter_info['Default Gateway'] = line.split(':')[
+                        1].strip()
+            if 'IPv4 Address' in adapter_info:
+                network_cards.append(adapter_info)
+    except subprocess.CalledProcessError:
+        pass  # Handle the error gracefully
+    return network_cards
 
 
 def write_to_file(system_info):
@@ -117,6 +156,45 @@ def write_to_file(system_info):
             file.write("\n")
 
 
+def runShellCommand(command_list, command_name):
+    print(f"Running {command_name}:")
+    try:
+        process = subprocess.Popen(command_list, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
+        for line in iter(process.stdout.readline, ''):
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        process.wait()
+        print(f"{command_name} completed successfully.\n\n")
+    except subprocess.CalledProcessError as e:
+        print(f"{command_name} failed with error: {e}\n\n")
+
+
+def get_antivirus_list():
+    running_antivirus_list = []
+    try:
+        if platform.system() == 'Windows':
+            # Use WMIC to query for running antivirus products
+            output = subprocess.check_output(
+                ['wmic', '/Namespace:\\\\root\\SecurityCenter2', 'Path',
+                    'AntiVirusProduct', 'Get', 'displayName', '/Format:List'],
+                universal_newlines=True
+            )
+
+            # Extract antivirus product names from the output
+            for line in output.split('\n'):
+                if line.strip().startswith('displayName='):
+                    antivirus_name = line.strip().split('=')[1]
+                    running_antivirus_list.append(
+                        {'Name': antivirus_name.strip()})
+
+    except subprocess.CalledProcessError as e:
+        # Handle any errors gracefully
+        print(f'Error retrieving antivirus information: {e}')
+
+    return running_antivirus_list
+
+
 if __name__ == "__main__":
     system_info = {
         "OS": get_os_info(),
@@ -125,7 +203,18 @@ if __name__ == "__main__":
         "GPU": get_gpu_info(),
         "Hard Drive": get_disk_info(),
         "Motherboard": get_motherboard_info(),
-        "Display": get_display_info()
+        "Display": get_display_info(),
+        "Network Card": get_network_card_info(),
+        "Anti-virus":
+            get_antivirus_list()
     }
     write_to_file(system_info)
-    print("System information collected and saved to system_info.txt")
+    print("System information collected and saved to system_info.txt\n")
+
+    print("Starting windows recovery commands")
+
+    runShellCommand(['sfc', '/scannow'], "Sfc scan")
+    runShellCommand(['DISM', '/Online', '/Cleanup-Image',
+                    '/CheckHealth'], "DISM CheckHealth")
+    runShellCommand(['DISM', '/Online', '/Cleanup-Image',
+                    '/ScanHealth'], "DISM ScanHealth")
