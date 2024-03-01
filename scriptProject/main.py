@@ -66,7 +66,6 @@ def get_os_info():
 def get_display_info():
     display_info = []
     try:
-        # Run PowerShell command directly, without using Select-Object
         output = subprocess.check_output(
             ['powershell',
                 'Get-CimInstance -ClassName Win32_VideoController | ForEach-Object { $_.VideoModeDescription }'],
@@ -77,10 +76,9 @@ def get_display_info():
         lines = output.strip().split('\n')
 
         for line in lines:
-            # Strip any leading or trailing spaces
             line = line.strip()
             display_info.append({'Resolution': line})
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         display_info.append({'Resolution': 'N/A'})
     return display_info
 
